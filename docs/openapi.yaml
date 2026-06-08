@@ -1,0 +1,191 @@
+openapi: 3.0.0
+info:
+  title: Vaya Switch API
+  description: Stellar inheritance tool for creating claimable balances with natural language grace periods.
+  version: 1.0.0
+
+servers:
+  - url: /api
+    description: Local development server
+
+paths:
+  /stellar/create-inheritance:
+    post:
+      summary: Create an inheritance claimable balance
+      description: Generates a Stellar CreateClaimableBalance operation for multiple heirs.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - source_account
+                - asset
+                - amount
+                - heirs
+              properties:
+                source_account:
+                  type: string
+                  example: GABCD...
+                asset:
+                  type: object
+                  required:
+                    - code
+                    - issuer
+                  properties:
+                    code:
+                      type: string
+                      example: USDC
+                    issuer:
+                      type: string
+                      example: GBBD...
+                amount:
+                  type: number
+                  example: 100.0
+                heirs:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - address
+                      - grace_period
+                    properties:
+                      address:
+                        type: string
+                        example: GHEIR1...
+                      grace_period:
+                        type: string
+                        example: "1 year"
+      responses:
+        '200':
+          description: Operation generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /stellar/ping:
+    post:
+      summary: Ping a claimable balance
+      description: Builds a ping operation to refresh or identify a balance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - balance_id
+              properties:
+                balance_id:
+                  type: string
+                  minLength: 72
+                  maxLength: 72
+                  example: "00000000a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+      responses:
+        '200':
+          description: Ping operation generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /stellar/parse:
+    post:
+      summary: Parse natural language timeframe
+      description: Converts a string like "30 minutes" or "2 years" into seconds.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - timeframe
+              properties:
+                timeframe:
+                  type: string
+                  example: "30 minutes"
+      responses:
+        '200':
+          description: Timeframe parsed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  seconds:
+                    type: integer
+                    example: 1800
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /vaya/status:
+    get:
+      summary: Check balance status
+      description: Queries Horizon to see if a balance is claimable by the heir.
+      parameters:
+        - name: balance_id
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 72
+            maxLength: 72
+          example: "00000000a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+      responses:
+        '200':
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance_found:
+                    type: boolean
+                  heir_can_claim:
+                    type: boolean
+                  seconds_remaining:
+                    type: integer
+                  heir_unlocks_at:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        operation:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: "Invalid timeframe format: 30 blips"
+
+  responses:
+    ErrorResponse:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

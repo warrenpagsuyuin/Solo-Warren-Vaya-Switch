@@ -1,0 +1,24 @@
+{
+  "name": "vaya-switch",
+  "version": "1.0.0",
+  "description": "Cross-Wallet Inheritance Beacon - Stellar non-custodial dead man's switch",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "demo": "node demo.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [
+    "stellar",
+    "blockchain",
+    "inheritance",
+    "claimable-balance"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@stellar/stellar-sdk": "^15.1.0",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2"
+  }
+}

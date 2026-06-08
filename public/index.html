@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaya-Switch</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 5px; }
+        .header p { font-size: 0.95em; opacity: 0.9; }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .card h2 { color: #667eea; margin-bottom: 20px; font-size: 1.4em; }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9em;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+        button:active { transform: scale(0.98); }
+        .output {
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85em;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+        }
+        .output.error { background: #fee; color: #c33; border-color: #fcc; }
+        .output.success { background: #efe; color: #3c3; border-color: #cfc; }
+        .output.info { background: #eef; color: #33c; border-color: #ccf; }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab-btn {
+            background: none;
+            color: #999;
+            padding: 12px 20px;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        small { color: #999; font-size: 0.85em; display: block; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌟 Vaya-Switch</h1>
+            <p>Inheritance Beacon - Non-Custodial Dead Man's Switch</p>
+            <p style="font-size: 0.85em; margin-top: 15px;">
+                <button id="connectBtn" onclick="handleConnect()" style="background: #28a745; border: none; color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Connect Freighter Wallet</button>
+                <span id="walletStatus" style="margin-left: 10px; color: white; font-family: monospace;"></span>
+            </p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(0)">Create</button>
+            <button class="tab-btn" onclick="switchTab(1)">Claim</button>
+            <button class="tab-btn" onclick="switchTab(2)">Check</button>
+        </div>
+
+        <!-- CREATE TAB -->
+        <div id="tab-0" class="tab-content active">
+            <div class="card">
+                <h2>Create Inheritance Beacon</h2>
+                <div class="form-group">
+                    <label>Primary Account (Owner)</label>
+                    <input type="text" id="primaryAccount" placeholder="G... or S...">
+                    <small>Enter your Public Key (G...) to use Freighter, or Secret Key (S...) for automatic signing</small>
+                </div>
+                <div class="form-group">
+                    <label>Heir Account Public (Account B)</label>
+                    <input type="text" id="heirPublic" placeholder="GDZA...">
+                    <small>The heir's public key - receives funds after timeout</small>
+                </div>
+                <div class="form-group">
+                    <label>Timeframe</label>
+                    <input type="text" id="timeframe" placeholder="e.g. 6 months, 1 year, 10 seconds" value="1 minute">
+                    <small>How long before heir can claim</small>
+                </div>
+                <div class="form-group">
+                    <label>Amount (XLM)</label>
+                    <input type="text" id="amount" placeholder="e.g. 100" value="10">
+                    <small>How much to lock in the beacon</small>
+                </div>
+                <div class="btn-group">
+                    <button id="createBtn" onclick="createBeacon()">Create Beacon</button>
+                </div>
+                <div id="beaconOutput" class="output"></div>
+            </div>
+        </div>
+
+        <!-- CLAIM TAB -->
+        <div id="tab-1" class="tab-content">
+            <div class="card">
+                <h2>Claim Inheritance</h2>
+                <p style="color: #666; margin-bottom: 20px;">
+                    ⏳ Can only claim after the deadline passes
+                </p>
+                <div class="form-group">
+                    <label>Heir Account (Public Key or Secret)</label>
+                    <input type="text" id="heirAccount" placeholder="G... or S...">
+                    <small>Heir's address (Freighter) or Secret Key</small>
+                </div>
+                <div class="form-group">
+                    <label>Claimable Balance ID</label>
+                    <input type="text" id="balanceId" placeholder="0000...">
+                    <small>From "Create Beacon" response</small>
+                </div>
+                <div class="btn-group">
+                    <button onclick="claimInheritance()">Claim Now</button>
+                </div>
+                <div id="claimOutput" class="output"></div>
+            </div>
+        </div>
+
+        <!-- CHECK TAB -->
+        <div id="tab-2" class="tab-content">
+            <div class="card">
+                <h2>Check Balance Status</h2>
+                <div class="form-group">
+                    <label>Claimable Balance ID</label>
+                    <input type="text" id="checkBalanceId" placeholder="0000...">
+                </div>
+                <div class="btn-group">
+                    <button onclick="checkBalance()">Check Status</button>
+                    <button onclick="checkHealth()" style="background: #888;">API Health</button>
+                </div>
+                <div id="checkOutput" class="output"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Freighter API -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/1.1.2/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.1/stellar-sdk.min.js"></script>
+
+    <script>
+        const API_URL = `${window.location.origin}/api`;
+        let userAddress = null;
+
+        async function handleConnect() {
+            try {
+                if (typeof freighterApi === 'undefined') {
+                    alert('Freighter not found! Please install the Freighter extension.');
+                    return;
+                }
+                
+                const isConnected = await freighterApi.isConnected();
+                if (isConnected) {
+                    const publicKey = await freighterApi.getPublicKey();
+                    userAddress = publicKey;
+                    document.getElementById('walletStatus').textContent = `Connected: ${publicKey.slice(0, 6)}...${publicKey.slice(-4)}`;
+                    document.getElementById('primaryAccount').value = publicKey;
+                    document.getElementById('connectBtn').textContent = 'Wallet Connected';
+                    document.getElementById('connectBtn').style.background = '#6c757d';
+                }
+            } catch (error) {
+                alert(`Freighter Error: ${error.message}`);
+            }
+        }
+
+        function switchTab(index) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${index}`).classList.add('active');
+            document.querySelectorAll('.tab-btn')[index].classList.add('active');
+        }
+
+        function showOutput(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            element.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+            element.className = `output ${isError ? 'error' : 'success'}`;
+            element.style.display = 'block';
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            element.textContent = 'Processing transaction...';
+            element.className = 'output info';
+            element.style.display = 'block';
+        }
+
+        function isValidPublicKey(value) {
+            return typeof StellarSdk !== 'undefined' &&
+                StellarSdk.StrKey.isValidEd25519PublicKey(value);
+        }
+
+        async function createBeacon() {
+            const accountInput = document.getElementById('primaryAccount').value.trim();
+            const heirAccount = document.getElementById('heirPublic').value.trim();
+            const isSecret = accountInput.startsWith('S');
+            
+            const params = {
+                primaryAccountSecret: isSecret ? accountInput : null,
+                primaryAccountPublic: isSecret ? null : accountInput,
+                heirAccountPublic: heirAccount,
+                timeframe: document.getElementById('timeframe').value.trim(),
+                amount: document.getElementById('amount').value.trim(),
+                assetCode: 'native'
+            };
+
+            if (!accountInput || !params.heirAccountPublic || !params.timeframe || !params.amount) {
+                showOutput('beaconOutput', '❌ Error: All fields required', true);
+                return;
+            }
+
+            if (!isSecret && !isValidPublicKey(accountInput)) {
+                showOutput('beaconOutput', '❌ Error: Primary Account must be a valid Stellar public key that starts with G.', true);
+                return;
+            }
+
+            if (!isValidPublicKey(params.heirAccountPublic)) {
+                showOutput('beaconOutput', '❌ Error: Heir Account Public must be a valid Stellar public key that starts with G.', true);
+                return;
+            }
+
+            showLoading('beaconOutput');
+
+            try {
+                const response = await fetch(`${API_URL}/create-beacon`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                
+                const data = await response.json();
+
+                if (data.signed === false && data.xdr) {
+                    // SIGN WITH FREIGHTER
+                    showOutput('beaconOutput', '✍️ Please sign transaction in Freighter...', false);
+                    try {
+                        const signedTransaction = await freighterApi.signTransaction(data.xdr, {
+                            network: 'TESTNET'
+                        });
+                        
+                        showOutput('beaconOutput', '🚀 Submitting signed transaction...', false);
+                        
+                        // Submit signed transaction to Horizon
+                        const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+                        const transaction = new StellarSdk.Transaction(signedTransaction, StellarSdk.Networks.TESTNET);
+                        const result = await server.submitTransaction(transaction);
+                        
+                        showOutput('beaconOutput', {
+                            success: true,
+                            message: 'Inheritance beacon created via Freighter!',
+                            transactionHash: result.hash,
+                            // Note: Extraction of balance ID from result would be similar to server-side
+                        });
+                    } catch (signError) {
+                        showOutput('beaconOutput', `❌ Signing failed: ${signError.message}`, true);
+                    }
+                } else {
+                    showOutput('beaconOutput', data, !response.ok);
+                }
+            } catch (error) {
+                showOutput('beaconOutput', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function claimInheritance() {
+            // Similar logic for claiming with Freighter could be added here
+            const accountInput = document.getElementById('heirAccount').value;
+            const balanceId = document.getElementById('balanceId').value;
+            
+            showOutput('claimOutput', 'Claiming with Freighter support coming soon. Currently requires secret key.', true);
+        }
+
+        async function checkBalance() {
+            const balanceId = document.getElementById('checkBalanceId').value;
+            showLoading('checkOutput');
+            try {
+                const response = await fetch(`${API_URL}/balance/${balanceId}`);
+                const data = await response.json();
+                showOutput('checkOutput', data, !response.ok);
+            } catch (error) {
+                showOutput('checkOutput', `❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                showOutput('checkOutput', data, !response.ok);
+            } catch (error) {}
+        }
+
+        window.onload = handleConnect;
+    </script>
+</body>
+</html>
